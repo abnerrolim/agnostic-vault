@@ -1,0 +1,15 @@
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/LocalStorage.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/KeyVaultException.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/KeyVaultProperties.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/BlobObject.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/VaultController.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/StorageException.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/KeyVaultService.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/helper/AzureHelper.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/Key.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/ClientSecretKeyVaultCredential.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/crypt/AzureKeyVaultService.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/StorageProperties.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/StorageService.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/storage/BlobAzureStorage.java
+/home/abner/workspace/zupkeyvault/src/main/java/zupkeyvault/Application.java
