@@ -18,7 +18,7 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
 
 import zupkeyvault.crypt.KeyVaultService;
-import zupkeyvault.helper.StreamConvertUtils;
+import zupkeyvault.helper.ConvertUtils;
 
 @Component
 public class BlobAzureStorage extends AbstractStorageService {
@@ -55,7 +55,7 @@ public class BlobAzureStorage extends AbstractStorageService {
 
 	@Override
 	public byte[] loadPayload(String fileId){
-		return loadBlobObject(fileId).getPayload().decode();
+		return loadBlobObject(fileId).getPayload();
 	}
 
     public BlobObject loadBlobObject(String fileId){
@@ -63,7 +63,11 @@ public class BlobAzureStorage extends AbstractStorageService {
 		try {
 			CloudBlockBlob blob = container.getBlockBlobReference(fileId);
 			blob.download(baos);
-			return StreamConvertUtils.byteToObject(baos.toByteArray(), BlobObject.class);
+			BlobObject bObject = ConvertUtils.byteToObject(baos.toByteArray(), BlobObject.class);
+			if(bObject.isEncrypted()){
+				bObject.decryptPayload(keyVaultService);
+			}
+			return bObject;
 		}catch(URISyntaxException | StorageException | IOException | ClassNotFoundException e) {
 			throw new zupkeyvault.storage.StorageException(e.getMessage());//TODO ajeitar
 		}finally{
@@ -86,7 +90,7 @@ public class BlobAzureStorage extends AbstractStorageService {
 	public void store(BlobObject blob, StoragePolicy storagePolicy) {
 		try {
 			CloudBlockBlob cbb = container.getBlockBlobReference(storagePolicy.getBlobReference());
-			InputStream in = StreamConvertUtils.objectToInputStream(blob);
+			InputStream in = ConvertUtils.objectToInputStream(blob);
 			cbb.upload(in, in.available());
 		} catch (URISyntaxException | StorageException | IOException e) {
 			throw new zupkeyvault.storage.StorageException(e.getMessage());//TODO ajeitar

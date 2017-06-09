@@ -5,8 +5,8 @@
 .mvn/
 .project
 .settings
-.deploy/
-.target/
+deploy/
+target/
 
 # Log file
 *.log

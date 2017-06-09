@@ -16,7 +16,7 @@ public interface StorageService {
     Stream<String> listAll();
 
     byte[] loadPayload(String fileId);
-
+    
     BlobObject loadBlobObject(String fileId);
     
     void delete(String fileId);

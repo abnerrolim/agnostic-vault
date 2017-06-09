@@ -8,6 +8,21 @@ public class KeyVaultProperties {
 	
 	@Value("${zup.keyvault.baseurl}")
     private String baseUrl;
+	
+	@Value("${zup.keyvault.port}")
+    private int port;
+	
+	@Value("${zup.keyvault.auth.token}")
+    private String token;
+
+
+	public int getPort() {
+		return port;
+	}
+
+	public String getToken() {
+		return token;
+	}
 
 	public String getBaseUrl() {
 		return baseUrl;

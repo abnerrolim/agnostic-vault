@@ -13,7 +13,7 @@ import zupkeyvault.crypt.KeyVaultService;
 
 public abstract class AbstractStorageService implements StorageService {
 	
-	private KeyVaultService keyVaultService;
+	protected KeyVaultService keyVaultService;
 
 	protected final StorageProperties properties;
 	
@@ -37,17 +37,20 @@ public abstract class AbstractStorageService implements StorageService {
 		Assert.notNull(blob, "Blob can't be null!!");
 		Assert.notNull(storagePolicy, "You need set storagepolicy");
 		Map<String,String> metadata = Maps.newHashMap();
-		byte[] newBlobOnTheBlock;
+		byte[] payload;
 		if(storagePolicy != null && storagePolicy.applyEncryptation()){
-			newBlobOnTheBlock = keyVaultService.encrypt(blob, storagePolicy.getKid());
-			//TODO:make this a reference not the uri
-			metadata.put(BlobObject.ENCRIPTED_REFERENCE, storagePolicy.getKid());
+			payload = BlobObject.encryptPayload(keyVaultService, blob, storagePolicy.getKid());
+			metadata.put(BlobObject.ENCRYPT_REFERENCE, storagePolicy.getKid());
 		}else{
-			newBlobOnTheBlock = blob;
+			payload = blob;
 		}
 		//delegates to impl
-		store(new BlobObject(metadata, newBlobOnTheBlock, storagePolicy.getBlobReference()), storagePolicy);
+		store(new BlobObject(metadata, payload, storagePolicy.getBlobReference()), storagePolicy);
 	}
 	
+	public byte[] loadPayload(String fileId){
+		BlobObject blobObject = loadBlobObject(fileId);
+		return blobObject.getPayload();
+    }
 
 }

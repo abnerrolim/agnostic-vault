@@ -1,37 +1,54 @@
 package zupkeyvault.crypt;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.springframework.util.StreamUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
+import com.microsoft.azure.keyvault.models.SecretBundle;
+import com.microsoft.azure.storage.core.Base64;
+
 //@Component
-public class AzureKeyVaultService {/* implements KeyVaultService {
+public class AzureKeyVaultService  implements KeyVaultService {
 
 	private final KeyVaultClient keyVaultClient;
-	private final KeyVaultProperties props;
 
-	public AzureKeyVaultService(KeyVaultProperties props) {
-		this.props = props;
+	public AzureKeyVaultService() {
 		KeyVaultCredentials credentials = new ClientSecretKeyVaultCredential();
 		//-- 1.0.0 lib
 		this.keyVaultClient = new KeyVaultClient(credentials);
 		//--
-		//--0.8.0 lib
+/*		//--0.8.0 lib
 		Configuration config = KeyVaultConfiguration.configure(null, credentials);
 		this.keyVaultClient = KeyVaultClientService.create(config);
 		//--
+*/
 	}
 
 	@Override
-	public byte[] encrypt(final byte[] raw, final String keyId) {
+	public String encrypt(final byte[] raw, final String keyId) {
 		try {
 			//TODO: encryptAsync em keyVault só aceita plaintext (v 0.8.0)
-			byte[] toString = raw;
 			// v 0.8
-			Future<KeyOperationResult> opResult = keyVaultClient.encryptAsync(resolveKey(keyId), JsonWebKeyEncryptionAlgorithm.RSA_OAEP,
-					toString);
-			return opResult.get().result();
+			//Future<KeyOperationResult> opResult = keyVaultClient.encryptAsync(resolveKey(keyId), JsonWebKeyEncryptionAlgorithm.RSA_OAEP, raw);
 			//--
 			// v1.0
-			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			AzureHelper.encrypt(null, output, getKeyAsJWK(keyId));
-			return output.toByteArray();
+			Cipher cipher = initCipher(Cipher.ENCRYPT_MODE, keyId);
+			byte[] es = cipher.doFinal(raw);
+			return Base64.encode(es);
 		} catch (Exception e) {
 			// TODO: pensar no que fazer de bom
 			throw new KeyVaultException("Unable to encript current content", e);
@@ -39,7 +56,7 @@ public class AzureKeyVaultService {/* implements KeyVaultService {
 	}
 
 	@Override
-	public byte[] encrypt(MultipartFile rawFile, String keyId) {
+	public String encrypt(MultipartFile rawFile, String keyId) {
 		try {
 			return encrypt(StreamUtils.copyToByteArray(rawFile.getInputStream()), keyId);
 		} catch (IOException e) {
@@ -48,78 +65,45 @@ public class AzureKeyVaultService {/* implements KeyVaultService {
 		}
 	}
 
-	@Override
-	public JWK getKey(String keyId) {
-		KeyBundle keyBundle = keyVaultClient.getKey(resolveKey(keyId));
-		// "https://billing-key-vault.vault.azure.net/keys/billing-poc-cripfy/3a7ca86ee9e14138ab825d00e8e2a259"
-		JsonWebKey key = keyBundle.key();
-		return AzureHelper.convertToRSAKey(key);
-	}
-	
-	private JsonWebKey getKeyAsJWK(String keyId){
-		KeyBundle keyBundle = keyVaultClient.getKey(resolveKey(keyId));
-		return keyBundle.key();
-	}
-
-	private String resolveKey(String key) {
-		Assert.notNull(key, "Key identifier can't be null");
-		if (key.startsWith(props.getBaseUrl()))
-			return key;
-		return props.getBaseUrl() + "keys/" + key;
-	}
-
-	@Override
-	public List<Key> listKeys() {
-// v 0.8.0		
-		try {
-			ListKeysResponseMessage keys = keyVaultClient.getKeysAsync(props.getBaseUrl(), null).get();
-			KeyItem[] keyItens = keys.getValue();
-			List<Key> ks = new ArrayList<Key>();
-			for (KeyItem keyItem : keyItens) {
-				Key k = null;//getKey(keyItem.getKid());
-				ks.add(k);
+	public byte[] decrypt(final byte[] encrypted, final String keyId) {
+			Cipher cipher = initCipher(Cipher.DECRYPT_MODE, keyId);
+			try {
+				return cipher.doFinal(encrypted);
+			} catch (IllegalBlockSizeException | BadPaddingException e) {
+				// TODO: pensar no que fazer de bom
+				throw new KeyVaultException("Unable to encript current content", e);
 			}
-			return ks;
-		} catch (InterruptedException | ExecutionException e) {
-			// TODO: pensar no que fazer de bom
-			throw new KeyVaultException("Unable to list keys of key vault", e);
-		}
-//---
-// v 1.0.0
-		PagedList<KeyItem> keyItens = keyVaultClient.listKeys(props.getBaseUrl());
-		List<Key> ks = new ArrayList<Key>();
-		keyItens.forEach( k -> ks.add(getKey(k.kid()))) ;
-		return ks;
 	}
 
-	public Path decrypt(Path encriptedFile, String keyId) {
-		try {
-			KeyOperationResult result = keyVaultClient.decrypt(resolveKey(keyId), JsonWebKeyEncryptionAlgorithm.RSA_OAEP, Files.readAllBytes(encriptedFile));
-			Path out = Files.createTempFile("decript", "dec");
-			OutputStream decripted = Files.newOutputStream(out);
-			decripted.write(result.result());
-			decripted.flush();
-			decripted.close();
-			return out;
-		} catch (IOException e) {
-			// TODO: pensar no que fazer de bom
-			throw new KeyVaultException("Unable to encript current content", e);
-		}
+	@Override
+	public String getSecret(String vault, String kid) {
+		SecretBundle secretBundle = keyVaultClient.getSecret(vault, kid);
+		return secretBundle.value();
 	}
 	
-	public String decryptAsString(Path encriptedFile, String keyId) {
+	public String getSecret(String kid){
+		SecretBundle secretBundle = keyVaultClient.getSecret(kid);
+		return secretBundle.value();
+	}
+
+	@Override
+	public List<String> getEncryptationKeys() {
+		throw new KeyVaultException("This method was not implemented into azure key vault yet");
+	}
+
+	private Cipher initCipher(int encryptMode,String keyId){
+		String secretKey = getSecret(keyId);
+		byte[] decodedKey;
 		try {
-			KeyOperationResult result = keyVaultClient.decrypt(resolveKey(keyId), JsonWebKeyEncryptionAlgorithm.RSA1_5, Files.readAllBytes(encriptedFile));
-			Path out = Files.createTempFile("decript", "dec");
-			OutputStream decripted = Files.newOutputStream(out);
-			decripted.write(result.result());
-			decripted.flush();
-			decripted.close();
-			return "";
-		} catch (IOException e) {
+			decodedKey = secretKey.getBytes("UTF-8");
+			// rebuild key using SecretKeySpec
+			SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+			Cipher cipher = Cipher.getInstance("AES");
+			cipher.init(encryptMode, originalKey);
+			return cipher;
+		} catch (UnsupportedEncodingException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
 			// TODO: pensar no que fazer de bom
-			throw new KeyVaultException("Unable to encript current content", e);
+			throw new KeyVaultException("Unable to resolve encript/decript module", e);
 		}
 	}
-*/
 }

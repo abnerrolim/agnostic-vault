@@ -1,10 +1,17 @@
 package zupkeyvault;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,13 +33,13 @@ public class VaultController {
 		this.storageService = storageService;
 		this.vaultService = vaultService;
 	}
-/*
+
 	@GetMapping("/keys")
-	public ResponseEntity<List<Key>> listKeys() {
-		return ResponseEntity.ok().body(vaultService.listKeys());
+	public ResponseEntity<List<String>> listKeys() {
+		return ResponseEntity.ok().body(vaultService.getEncryptationKeys());
 	}
-*/
-	@PostMapping("/store/encryption/{kid}")
+
+	@PostMapping("/store/encryptation/{kid}")
 	public ResponseEntity handleFileUpload(@RequestParam("file") MultipartFile file, @PathVariable String kid)
 			throws NoSuchAlgorithmException, InterruptedException, ExecutionException, InstantiationException,
 			IllegalAccessException, ClassNotFoundException {
@@ -46,18 +53,15 @@ public class VaultController {
 		}
 	}
 	
-	/*@GetMapping("/store/{file}/dencryption/{kid}")
-	public ResponseEntity getFile(@PathVariable  String file, @PathVariable String kid)
-			throws NoSuchAlgorithmException, InterruptedException, ExecutionException, InstantiationException,
-			IllegalAccessException, ClassNotFoundException {
-		try {
-			Path encriptedFile = null;//storageService.load(file);
-			Path decryptedFile  = vaultService.decrypt(encriptedFile, kid);
-			return ResponseEntity.ok(decryptedFile);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return ResponseEntity.badRequest().body(e);
-		}
-	}*/
+	@GetMapping("/store/{file}/decryption/{kid}")
+	public FileSystemResource getFile(@PathVariable  String file, @PathVariable String kid) throws IOException {
+			byte[] content = storageService.loadPayload(file);
+			File tempFile = Files.createTempFile(null, file).toFile();
+			FileOutputStream fileStream = new FileOutputStream(tempFile);
+			fileStream.write(content);
+			fileStream.flush();
+			fileStream.close();
+			return new FileSystemResource(tempFile);
+	}
 
 }

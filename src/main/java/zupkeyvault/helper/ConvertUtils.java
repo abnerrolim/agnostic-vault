@@ -8,8 +8,11 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-public class StreamConvertUtils {
-	private StreamConvertUtils(){}
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class ConvertUtils {
+	private ConvertUtils(){}
 	
 	
 	public static <T> T byteToObject(byte[] myBytes, Class<T> clazz) throws IOException, ClassNotFoundException{
@@ -50,4 +53,8 @@ public class StreamConvertUtils {
 	    return new ByteArrayInputStream(objectToByteArrayOutputStream(obj).toByteArray());
 	}
 
+	public static String objectToJsonString(Object obj) throws JsonProcessingException{
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(obj);
+	}
 }

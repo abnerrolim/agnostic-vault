@@ -1,19 +1,20 @@
 package zupkeyvault.storage;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
-import com.nimbusds.jose.util.Base64URL;
+import zupkeyvault.crypt.KeyVaultService;
 
 public class BlobObject implements Serializable{
 	
-	transient static final String ENCRIPTED_REFERENCE = "ENC_KEY_ID"; 
+	transient static final String ENCRYPT_REFERENCE = "ENC_KEY_ID"; 
 	
 	private static final long serialVersionUID = -5093038994261452312L;
 
 	private final Map<String, String> metadata;
 	
-	private final Base64URL payload;
+	private byte[] payload;
 	
 	private final BlobObjectType objectType;
 	
@@ -23,7 +24,7 @@ public class BlobObject implements Serializable{
 	//TODO: builder?
 	BlobObject(Map<String, String> metadata, byte[] payload, String blobName){
 		this.metadata = metadata;
-		this.payload = Base64URL.encode(payload);
+		this.payload = payload;
 		this.objectType = classifyObjectType(metadata);
 		this.blobName = blobName;
 	}
@@ -36,16 +37,40 @@ public class BlobObject implements Serializable{
 		return blobName;
 	}
 	
-	public Base64URL getPayload() {
+	public byte[] getPayload() {
 		return payload;
+	}
+	
+	protected void decryptPayload(KeyVaultService keyVaultService){
+		byte[] decripted = keyVaultService.decrypt(getPayload(), getEncryptReference());
+		this.payload = decripted;
+	}
+	
+	protected static byte[] encryptPayload(KeyVaultService keyVaultService, byte[] rawPayload, String kid){
+		String cypherText = keyVaultService.encrypt(rawPayload, kid);
+		try {
+			return cypherText.getBytes("UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new StorageException("UTF-8 is not supported? Really?",e);
+		}
 	}
 	
 	public BlobObjectType getObjectType(){
 		return objectType;
 	}
+	
+	public boolean isEncrypted(){
+		return getObjectType().equals(BlobObjectType.ENCRYPTED);
+	}
+	
+	public String getEncryptReference(){
+		if(!isEncrypted())
+			throw new StorageException("Current blob isnt encrypted!");
+		return metadata.get(ENCRYPT_REFERENCE);
+	}
 
 	private BlobObjectType classifyObjectType(Map<String,String> metadata){
-		if(metadata != null && metadata.containsKey(ENCRIPTED_REFERENCE))
+		if(metadata != null && metadata.containsKey(ENCRYPT_REFERENCE))
 			return BlobObjectType.ENCRYPTED;
 		return BlobObjectType.UNCRYPTED;
 	}
