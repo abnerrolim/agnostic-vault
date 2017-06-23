@@ -11,5 +11,6 @@ public interface KeyVaultService {
 	String encrypt(final MultipartFile rawFile, final String kid);
 	byte[] decrypt(final byte[] encriptedBlob, final String kid);
 	String getSecret(final String vault, final String kid);
+	String setSecret(final String vault, final String kid, final String secretValue);
 	List<String> getEncryptationKeys();
 }

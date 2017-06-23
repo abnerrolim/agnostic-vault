@@ -106,4 +106,10 @@ public class AzureKeyVaultService  implements KeyVaultService {
 			throw new KeyVaultException("Unable to resolve encript/decript module", e);
 		}
 	}
+
+	@Override
+	public String setSecret(String vault, String kid, String secretValue) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

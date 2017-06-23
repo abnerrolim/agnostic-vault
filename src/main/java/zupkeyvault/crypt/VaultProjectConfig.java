@@ -2,9 +2,12 @@ package zupkeyvault.crypt;
 
 import org.springframework.stereotype.Component;
 import org.springframework.vault.authentication.ClientAuthentication;
-import org.springframework.vault.authentication.TokenAuthentication;
+import org.springframework.vault.authentication.CubbyholeAuthentication;
+import org.springframework.vault.authentication.CubbyholeAuthenticationOptions;
+import org.springframework.vault.client.VaultClients;
 import org.springframework.vault.client.VaultEndpoint;
 import org.springframework.vault.config.AbstractVaultConfiguration;
+import org.springframework.vault.support.VaultToken;
 
 @Component
 public class VaultProjectConfig extends AbstractVaultConfiguration {
@@ -22,7 +25,12 @@ public class VaultProjectConfig extends AbstractVaultConfiguration {
      */
 	@Override
 	public ClientAuthentication clientAuthentication() {
-        return new TokenAuthentication(properties.getToken());
+        CubbyholeAuthenticationOptions options = CubbyholeAuthenticationOptions
+                .builder()
+                .initialToken(VaultToken.of(properties.getToken()))
+                .wrapped()
+                .build();
+        return new CubbyholeAuthentication(options, VaultClients.createRestTemplate(vaultEndpoint(),clientHttpRequestFactoryWrapper().getClientHttpRequestFactory()));
 	}
 
 	@Override
@@ -30,7 +38,7 @@ public class VaultProjectConfig extends AbstractVaultConfiguration {
 		VaultEndpoint vaultEndPoint = new VaultEndpoint();
 		vaultEndPoint.setHost(properties.getBaseUrl());
 		vaultEndPoint.setPort(properties.getPort());
-		vaultEndPoint.setScheme("http");
+		vaultEndPoint.setScheme("https");
 		return vaultEndPoint;
 	}
 

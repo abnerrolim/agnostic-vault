@@ -59,12 +59,18 @@ public class VaultProjectService implements KeyVaultService {
 	}
 
 	private String formatPath(String vault, String kid) {
-		return vault + "/" + kid;
+		return "secret/"+ vault + "/" + kid;
 	}
 
 	@Override
 	public List<String> getEncryptationKeys() {
 		return vaultOperations.opsForTransit().getKeys();
+	}
+
+	@Override
+	public String setSecret(String vault, String kid, String secretValue) {
+		VaultResponse vaultResponse = vaultOperations.write(formatPath(vault, kid), secretValue);
+		return (vaultResponse != null ? vaultResponse.toString() : "null");
 	}
 
 }
