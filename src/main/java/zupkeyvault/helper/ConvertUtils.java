@@ -54,7 +54,5 @@ public class ConvertUtils {
 	}
 
 	public static String objectToJsonString(Object obj) throws JsonProcessingException{
-		ObjectMapper mapper = new ObjectMapper();
-		return mapper.writeValueAsString(obj);
 	}
 }
